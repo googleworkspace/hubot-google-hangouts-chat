@@ -1,0 +1,1 @@
+Hangouts Chat Hubot Adapter
