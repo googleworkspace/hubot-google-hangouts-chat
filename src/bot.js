@@ -25,7 +25,7 @@ const app = express()
     .use(bodyparser.urlencoded({extended: false}))
     .use(bodyparser.json());
 
-class HangoutsChatPubsubBot extends Adapter {
+class HangoutsChatBot extends Adapter {
 
   constructor(robot, options) {
     super(robot);
@@ -39,13 +39,12 @@ class HangoutsChatPubsubBot extends Adapter {
       let authClientPromise = auth.getClient({
         scopes: ['https://www.googleapis.com/auth/chat.bot']
       });
-      authClientPromise.then((credentials) => {
-        this.chat = google.chat({
+      this.chatPromise = authClientPromise.then((credentials) =>
+        google.chat({
           version: 'v1',
           auth: credentials
-        });
-      });
-    }
+        }));
+      }
   }
 
   /*
@@ -59,10 +58,11 @@ class HangoutsChatPubsubBot extends Adapter {
     };
 
     if (this.isPubSub) {
-      this.chat.spaces.messages.create({
-        parent: envelope.message.space.name,
-        requestBody: data
-      });
+      this.chatPromise.then((chat) => 
+        chat.spaces.messages.create({
+            parent: envelope.message.space.name,
+            requestBody: data
+        }));
     } else {
       // Post message as HTTP response
       envelope.message.httpRes.json(data);
@@ -110,7 +110,7 @@ class HangoutsChatPubsubBot extends Adapter {
     const messageHandler = (pubsubMessage) => {
       this.robot.logger.debug(`Received message ${pubsubMessage.id}:`);
       this.robot.logger.debug(`\tData: ${pubsubMessage.data}`);
-      
+
       const dataUtf8encoded = Buffer.from(pubsubMessage.data, 'base64').toString('utf8');
       let event;
       try {
@@ -183,4 +183,4 @@ class HangoutsChatPubsubBot extends Adapter {
 
 }
 
-module.exports = HangoutsChatPubsubBot
+module.exports = HangoutsChatBot
