@@ -105,6 +105,7 @@ class HangoutsChatBot extends Adapter {
    */
   startPubSubClient() {
     const pubsub = PubSub();
+    this.robot.logger.info(`Connecting to Pub/Sub subscription - ${this.subscriptionName}`);
     const subscription = pubsub.subscription(this.subscriptionName);
     // Create an event handler to handle messages.
     const messageHandler = (pubsubMessage) => {
