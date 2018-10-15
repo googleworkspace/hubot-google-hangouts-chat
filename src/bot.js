@@ -168,8 +168,6 @@ class HangoutsChatBot extends Adapter {
    * the bridge between Hubot and Hangouts Chat
    */
   run() {
-    this.robot.logger.info('Running');
-
     if (this.isPubSub) {
       // Connect to PubSub subscription
       this.startPubSubClient();
@@ -178,6 +176,7 @@ class HangoutsChatBot extends Adapter {
       this.startHttpServer();
     }
 
+    this.robot.logger.info('Hangouts Chat adapter initialized successfully');
     // To make Hubot load scripts
     this.emit('connected')
   }
