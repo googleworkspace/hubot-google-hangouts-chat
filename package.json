@@ -1,6 +1,6 @@
 {
-  "name": "@google/hubot-hangouts-chat",
-  "version": "1.0.0",
+  "name": "hubot-google-hangouts-chat",
+  "version": "1.0.2",
   "description": "Hangouts Chat Adapter for Hubot",
   "main": "main.js",
   "scripts": {

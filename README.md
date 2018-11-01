@@ -1,4 +1,4 @@
-# hubot-hangouts-chat
+# hubot-google-hangouts-chat
 
 This is a [Hubot](http://hubot.github.com/) adapter to use with [Hangouts Chat](https://gsuite.google.com/products/chat/).
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-const {Adapter, User, TextMessage} = require.main.require('hubot');
+const {Adapter, User, TextMessage} = require.main.require('hubot/es2015');
 const PubSub = require(`@google-cloud/pubsub`);
 const {google} = require('googleapis');
 const {auth} = require('google-auth-library');
