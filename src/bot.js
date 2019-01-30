@@ -58,7 +58,7 @@ class HangoutsChatBot extends Adapter {
     };
 
     if (this.isPubSub) {
-      this.chatPromise.then((chat) => 
+      this.chatPromise.then((chat) =>
         chat.spaces.messages.create({
             parent: envelope.message.space.name,
             requestBody: data
@@ -151,7 +151,7 @@ class HangoutsChatBot extends Adapter {
     let user = new User(userId, userOptions);
     let hangoutsChatTextMessage = new HangoutsChatTextMessage(
       user,
-      message.argumentText,
+      message.text,
       message.name,
       message.space,
       message.thread,
