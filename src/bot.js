@@ -37,7 +37,7 @@ class HangoutsChatBot extends Adapter {
 
     // Establish OAuth with Hangouts Chat. This is required for PubSub bots and
     // HTTP bots which want to create async messages.
-    let authClientPromise = auth.getClient({
+    const authClientPromise = auth.getClient({
       scopes: ['https://www.googleapis.com/auth/chat.bot']
     });
     this.chatPromise = authClientPromise.then((credentials) =>
@@ -45,64 +45,126 @@ class HangoutsChatBot extends Adapter {
         version: 'v1',
         auth: credentials
       })).catch((err) =>
-        robot.logger.warning("Hangouts Chat Authentication Failed! This may " +
-          "cause message creation to fail. Please provide the credentials " +
-          "for your service account.\n" + err));
+        robot.logger.error(
+            'Hangouts Chat Authentication Failed! Please provide the ' +
+            'credentials for your service account.\n' + err));
   }
 
   /**
    * Helper method which takes care of constructing the response url
-   * and sending the message to Hangouts Chat.
+   * and sending the message to Hangouts Chat. One of the text or card string
+   * should be populated.
    *
-   * This method has different behavior based on the type of envelope passed in.
-   * <ul>
-   *   <li>If the envelope has a message, it responds to the message. For HTTP
-   *       bots, an HTTP response is sent.
-   *   <li>If the envelope does not have a message, it must have the room
-   *       parameter set to the name of a space. The bot will use the REST API
-   *       to post a message in the space.
-   * </ul>
-   * @param {Object} envelope An Object with message, room, and user details.
-   * @param {string} text The message text.
+   * @param {string} space The space in which to post the message
+   * @param {string=} thread The thread in which to post the message. If absent,
+   *    the message will be posted in a new thread.
+   * @param {string=} text The message text.
+   * @param {string=} card The message card JSON string.
+   * @param {Object=} httpRes The HTTP response for the request.
    */
-  sendMessage_(envelope, text = '') {
-    let hasMessage = !!envelope.message;
-    if (!hasMessage && !envelope.room) {
-      throw new Error("When sending a message, the envelope must have either " +
-          "a message or a room.");
+  postMessage_(
+      space, thread = '', text = '', cardString = '[]', httpRes = undefined) {
+    if (text == '' && cardString == '[]') {
+      throw new Error('You cannot send an empty message.');
     }
 
-    let spaceName = hasMessage ? envelope.message.space.name : envelope.room;
     let data = {
       space: {
-        name: spaceName,
+        name: space,
       },
       text,
+      cards: JSON.parse(cardString)
     };
-    if (hasMessage) {
-      data.thread = envelope.message.thread;
-    }
 
-    this.robot.logger.info("Sending a message to space: " + spaceName);
-    if (hasMessage && envelope.message.httpRes) {
-      envelope.message.httpRes.json(data);
+    if (thread != '') {
+      data.thread = thread;
+      this.robot.logger.info('Replying to a message to space: ' + space);
+      if (httpRes) {
+        httpRes.json(data);
+      } else {
+        this.createMessageUsingRestApi_(space, data);
+      }
     } else {
-      this.createMessageUsingRestApi_(spaceName, data);
+      this.robot.logger.info('Sending a message to space: ' + space);
+      this.createMessageUsingRestApi_(space, data);
+      if (httpRes) {
+        httpRes.sendStatus(200);
+      }
     }
-  }
-
-  /** Hubot is sending a message to Hangouts Chat. */
-  send(envelope, ...strings) {
-    this.sendMessage_(envelope, strings[0] || '');
-  }
-
-  /** Hubot is sending a reply to Hangouts Chat. */
-  reply(envelope, ...strings) {
-    this.sendMessage_(envelope, strings[0] || '');
   }
 
   /**
-   * Helper method for creating a message using the Hangouts Chat REST API.
+   * Sends a message to a space in Hangouts Chat.
+   *
+   * @param {Object} envelope An Object with a message or a room.
+   * @param {Array<String>} strings The message details. The first element will
+   *    be used for the message text and the second element will be used for the
+   *    message card. Empty strings will be ignored.
+   */
+  send(envelope, ...strings) {
+    this.postMessage_(
+        this.getSpaceFromEnvelope_(envelope),
+        '',
+        strings[0],
+        strings[1],
+        this.getOptHttpResFromEnvelope_(envelope));
+  }
+
+  /**
+   * Replies to a message in Hangouts Chat. If the space is a room, the message
+   * is posted in the same thread as the message specified in the envelope.
+   *
+   * @param {Object} envelope An Object with a message.
+   * @param {Array<String>} strings The message details. The first element will
+   *    be used for the message text and the second element will be used for the
+   *    message card. Empty strings will be ignored.
+   */
+  reply(envelope, ...strings) {
+    if (!envelope.message) {
+      throw new Error(
+          'When sending a reply, the envelope must contain a message');
+    }
+    this.postMessage_(
+        this.getSpaceFromEnvelope_(envelope),
+        envelope.message.thread,
+        strings[0],
+        strings[1],
+        this.getOptHttpResFromEnvelope_(envelope));
+  }
+
+  /**
+   * Gets the space name from the envelope object. The envelope must have either
+   * a message or a room. If it has both, the message is used.
+   *
+   * @param {Object} envelope An object with a message or room.
+   * @return {string} The space name.
+   */
+  getSpaceFromEnvelope_(envelope) {
+    if (envelope.message) {
+      return envelope.message.space.name;
+    }
+
+    if (envelope.room) {
+      return envelope.room;
+    }
+
+    throw new Error('When sending a message, the envelope must have either ' +
+        'a message or a room.');
+  }
+
+  /**
+   * Returns the HTTP response object from the envelope message if it is
+   * present.
+   *
+   * @param {Object} envelope An object with an optional httpRes object.
+   * @return {Object} The HTTP response or null.
+   */
+  getOptHttpResFromEnvelope_(envelope) {
+    return envelope.message ? envelope.message.httpRes : null;
+  }
+
+  /**
+   * Creates a message using the Hangouts Chat REST API.
    * @param {string} space The space in which the message should be created.
    * @param {Object} message The Message REST resource that should be added.
    */
@@ -113,8 +175,7 @@ class HangoutsChatBot extends Adapter {
             requestBody: message
         }))
         .catch((err) =>
-            this.robot.logger.error("Message creation failed. This may be " +
-                "due to missing service account credentials.", err));
+            this.robot.logger.error('Message creation failed.', err));
   }
 
   /** Activates HTTP listener and sets up handler to handle events. */
@@ -155,7 +216,7 @@ class HangoutsChatBot extends Adapter {
       }
 
       this.onEventReceived(event, null);
-      // "Ack" (acknowledge receipt of) the message.
+      // 'Ack' (acknowledge receipt of) the message.
       pubsubMessage.ack();
     };
 
@@ -172,15 +233,15 @@ class HangoutsChatBot extends Adapter {
       this.robot.logger.info(event);
       return;
     }
-    let message = event.message;
-    let sender = message.sender;
+    const message = event.message;
+    const sender = message.sender;
 
     // Construct TextMessage and User objects in the Hubot world
-    let userId = sender.name;
-    let userOptions = sender;
+    const userId = sender.name;
+    const userOptions = sender;
 
-    let user = new User(userId, userOptions);
-    let hangoutsChatTextMessage = new HangoutsChatTextMessage(
+    const user = new User(userId, userOptions);
+    const hangoutsChatTextMessage = new HangoutsChatTextMessage(
       user,
       message.argumentText,
       message.name,
