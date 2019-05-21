@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-HangoutsChatBot = require('./src/bot')
+const HangoutsChatBot = require('./src/bot');
+const {addExtensions} = require('./src/extensions');
 
 module.exports = {
   use(robot) {
@@ -26,6 +27,9 @@ module.exports = {
       /* HTTP options */
       port: process.env.PORT || 8080
     };
+
+    addExtensions(robot);
+
     return new HangoutsChatBot(robot, options);
   }
 };

@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
+'use strict'
+
 const {Adapter, User, TextMessage} = require.main.require('hubot/es2015');
 const PubSub = require(`@google-cloud/pubsub`);
 const {google} = require('googleapis');
 const {auth} = require('google-auth-library');
-const HangoutsChatTextMessage = require('./message')
+const {HangoutsChatTextMessage, AddedToSpaceTextMessage, AddedToSpaceMessage, RemovedFromSpaceMessage, CardClickedMessage} = require('./message')
 const express = require('express');
 const bodyparser = require('body-parser');
 const app = express()
@@ -43,7 +45,7 @@ class HangoutsChatBot extends Adapter {
     this.chatPromise = authClientPromise.then((credentials) =>
       google.chat({
         version: 'v1',
-        auth: credentials
+        auth: credentials,
       })).catch((err) =>
         robot.logger.error(
             'Hangouts Chat Authentication Failed! Please provide the ' +
@@ -56,14 +58,18 @@ class HangoutsChatBot extends Adapter {
    * should be populated.
    *
    * @param {string} space The space in which to post the message
-   * @param {string=} thread The thread in which to post the message. If absent,
-   *    the message will be posted in a new thread.
+   * @param {Object=} thread The thread in which to post the message. If absent,
+   *     the message will be posted in a new thread..
    * @param {string=} text The message text.
    * @param {string=} card The message card JSON string.
    * @param {Object=} httpRes The HTTP response for the request.
    */
   postMessage_(
-      space, thread = '', text = '', cardString = '[]', httpRes = undefined) {
+      space,
+      thread = undefined,
+      text = '',
+      cardString = '[]',
+      httpRes = undefined) {
     if (text == '' && cardString == '[]') {
       throw new Error('You cannot send an empty message.');
     }
@@ -73,23 +79,18 @@ class HangoutsChatBot extends Adapter {
         name: space,
       },
       text,
-      cards: JSON.parse(cardString)
+      cards: JSON.parse(cardString),
     };
 
-    if (thread != '') {
+    if (thread) {
       data.thread = thread;
-      this.robot.logger.info('Replying to a message to space: ' + space);
-      if (httpRes) {
-        httpRes.json(data);
-      } else {
-        this.createMessageUsingRestApi_(space, data);
-      }
+    }
+
+    this.robot.logger.info('Sending a message to space: ' + space);
+    if (httpRes) {
+      httpRes.json(data);
     } else {
-      this.robot.logger.info('Sending a message to space: ' + space);
       this.createMessageUsingRestApi_(space, data);
-      if (httpRes) {
-        httpRes.sendStatus(200);
-      }
     }
   }
 
@@ -97,17 +98,22 @@ class HangoutsChatBot extends Adapter {
    * Sends a message to a space in Hangouts Chat.
    *
    * @param {Object} envelope An Object with a message or a room.
-   * @param {Array<String>} strings The message details. The first element will
-   *    be used for the message text and the second element will be used for the
-   *    message card. Empty strings will be ignored.
+   * @param {Array<String>} strings The message details.
+   *     <ul>
+   *       <li>The first element will be used for the message text.
+   *       <li>The second element will be used for the message card.
+   *     </ul>
    */
   send(envelope, ...strings) {
     this.postMessage_(
         this.getSpaceFromEnvelope_(envelope),
-        '',
+        undefined,
         strings[0],
         strings[1],
-        this.getOptHttpResFromEnvelope_(envelope));
+        undefined);
+    if (envelope.message) {
+      envelope.message.setHandled();
+    }
   }
 
   /**
@@ -115,9 +121,11 @@ class HangoutsChatBot extends Adapter {
    * is posted in the same thread as the message specified in the envelope.
    *
    * @param {Object} envelope An Object with a message.
-   * @param {Array<String>} strings The message details. The first element will
-   *    be used for the message text and the second element will be used for the
-   *    message card. Empty strings will be ignored.
+   * @param {Array<String>} strings The message details.
+   *     <ul>
+   *       <li>The first element will be used for the message text.
+   *       <li>The second element will be used for the message card.
+   *     </ul>
    */
   reply(envelope, ...strings) {
     if (!envelope.message) {
@@ -129,7 +137,8 @@ class HangoutsChatBot extends Adapter {
         envelope.message.thread,
         strings[0],
         strings[1],
-        this.getOptHttpResFromEnvelope_(envelope));
+        envelope.message.httpRes,
+        true);
   }
 
   /**
@@ -150,17 +159,6 @@ class HangoutsChatBot extends Adapter {
 
     throw new Error('When sending a message, the envelope must have either ' +
         'a message or a room.');
-  }
-
-  /**
-   * Returns the HTTP response object from the envelope message if it is
-   * present.
-   *
-   * @param {Object} envelope An object with an optional httpRes object.
-   * @return {Object} The HTTP response or null.
-   */
-  getOptHttpResFromEnvelope_(envelope) {
-    return envelope.message ? envelope.message.httpRes : null;
   }
 
   /**
@@ -227,31 +225,76 @@ class HangoutsChatBot extends Adapter {
 
   /** Invoked when Event is received from Hangouts Chat. */
   onEventReceived(event, res) {
-    // TODO(kavimehta): Create and allow for additional message types
-    if (event.type != 'MESSAGE') {
-      this.robot.logger.info('Only MESSAGE event supported now !');
-      this.robot.logger.info(event);
-      return;
-    }
     const message = event.message;
-    const sender = message.sender;
+    const space = event.space;
+    let user = new User(event.user.name, event.user);
+    // This is the room value used in the Message constructor. Added for
+    // compatibility with Hubot's API.
+    user.room = space.name;
+    const eventTime = event.eventTime;
 
-    // Construct TextMessage and User objects in the Hubot world
-    const userId = sender.name;
-    const userOptions = sender;
-
-    const user = new User(userId, userOptions);
-    const hangoutsChatTextMessage = new HangoutsChatTextMessage(
-      user,
-      message.argumentText,
-      message.name,
-      message.space,
-      message.thread,
-      message.createTime,
-      res);
+    let hangoutsChatMessage;
+    switch(event.type) {
+      case 'ADDED_TO_SPACE':
+        hangoutsChatMessage =
+            message
+                ? new AddedToSpaceTextMessage(
+                    user,
+                    // For empty @mention's, argumentText is undefined.
+                    message.argumentText || '',
+                    message.name,
+                    space,
+                    message.thread,
+                    eventTime,
+                    res)
+                :   new AddedToSpaceMessage(user, space, eventTime, res);
+        break;
+      case 'REMOVED_FROM_SPACE':
+        hangoutsChatMessage =
+            new RemovedFromSpaceMessage(user, space, eventTime, res);
+        break;
+      case 'MESSAGE':
+        hangoutsChatMessage = new HangoutsChatTextMessage(
+          user,
+          // For empty @mention's, argumentText is undefined.
+          message.argumentText || '',
+          message.name,
+          space,
+          message.thread,
+          eventTime,
+          res);
+        break;
+      case 'CARD_CLICKED':
+        hangoutsChatMessage =
+            new CardClickedMessage(
+                user,
+                space,
+                eventTime,
+                res,
+                message.thread,
+                event.action.actionMethodName,
+                event.action.parameters);
+        break;
+      default:
+        this.robot.logger.error('Unrecognized event type: ' + event.type);
+        return;
+    }
 
     // Pass the message to the Hubot bot
-    this.robot.receive(hangoutsChatTextMessage);
+    this.robot.receive(hangoutsChatMessage, () => {
+      // For HTTP bots, only `res.reply()` uses the synchronous response. Hence,
+      // if a bot handles the message without calling reply, an HTTP response
+      // won't be sent. In this case, Hangouts Chat will assume that the request
+      // timed out and retry. To avoid this retry behavior, we automatically
+      // send a success response if the user called `res.send()` or if it is a
+      // REMOVED_FROM_SPACE event. The user can also force this behavior by
+      // calling message.setHandled() or message.finish().
+      if (!this.isPubSub
+          && (hangoutsChatMessage.handled || hangoutsChatMessage.done)
+          && !res.headersSent) {
+        res.sendStatus(200);
+      }
+    });
   }
 
   /**
