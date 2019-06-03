@@ -66,6 +66,7 @@ module.exports = function(robot) {
       /Message saved space: (.*)/i,
       (res) => {
         if (robot.savedSpace) {
+          res.message.setHandled();
           robot.messageRoom(robot.savedSpace, res.match[1]);
         } else {
           res.reply('There is no space saved!');
