@@ -1,0 +1,16 @@
+{
+    "type": "REMOVED_FROM_SPACE",
+    "eventTime": "2019-06-07T16:15:52.014137Z",
+    "user": {
+        "name": "users/112431535371413540116",
+        "displayName": "Luke Skywalker",
+        "avatarUrl": "https://somebogus.com/a-/asdf-wer23-asda-24qre",
+        "email": "chewey@starwars.com",
+        "type": "HUMAN"
+    },
+    "space": {
+        "name": "spaces/AAABK3JclZY",
+        "type": "ROOM",
+        "displayName": "the-falcon"
+    }
+}

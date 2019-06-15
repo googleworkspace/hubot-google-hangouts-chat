@@ -1,0 +1,39 @@
+{
+    "type": "MESSAGE",
+    "eventTime": "2019-06-07T16:22:17.308975Z",
+    "message": {
+        "name": "spaces/AAAApLddd99/messages/asdfsad.asdfasd",
+        "sender": {
+            "name": "users/1",
+            "displayName": "Joey Guerra",
+            "avatarUrl": "https://somebogus.com/a-/asdf-wer23-asda-24qre",
+            "email": "joeyguerra@somebogus.com",
+            "type": "HUMAN"
+        },
+        "createTime": "2019-06-07T16:22:17.308975Z",
+        "text": "hi",
+        "thread": {
+            "name": "spaces/AAAApLddd99/threads/fqw4asdfs",
+            "retentionSettings": {
+                "state": "PERMANENT"
+            }
+        },
+        "space": {
+            "name": "spaces/AAAApLddd99",
+            "type": "DM"
+        },
+        "argumentText": "hi"
+    },
+    "user": {
+        "name": "users/1",
+        "displayName": "Joey Guerra",
+        "avatarUrl": "https://somebogus.com/a-/asdf-wer23-asda-24qre",
+        "email": "joeyguerra@somebogus.com",
+        "type": "HUMAN"
+    },
+    "space": {
+        "name": "spaces/AAAApLddd99",
+        "type": "DM"
+    },
+    "configCompleteRedirectUrl": "https://chat.google.com/api/bot_config_complete?token=aasdfasdf"
+}
