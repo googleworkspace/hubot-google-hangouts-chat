@@ -15,7 +15,9 @@
     "google-auth-library": "^1.6.1"
   },
   "devDependencies": {
-  	"hubot": ">=2.0"
+    "chai": "^4.2.0",
+    "hubot": ">=2.0",
+    "mocha": "^6.1.4"
   },
   "peerDependencies": {
     "hubot": ">=2.0"
