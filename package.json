@@ -4,7 +4,7 @@
   "description": "Hangouts Chat Adapter for Hubot",
   "main": "main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha 'examples/**/*-spec.js' && exit 1"
   },
   "dependencies": {
     "@google-cloud/pubsub": "^0.14.3",
