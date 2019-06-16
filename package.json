@@ -5,7 +5,8 @@
   "main": "main.js",
   "scripts": {
     "test": "mocha 'examples/**/*-spec.js' && exit 1",
-    "test:dev": "HUBOT_LOG_LEVEL=error mocha 'examples/**/*-spec.js' --watch"
+    "test:dev": "HUBOT_LOG_LEVEL=error mocha 'examples/**/*-spec.js' --watch",
+    "test:dev:verbose": "HUBOT_LOG_LEVEL=all mocha 'examples/**/*-spec.js' --watch"
   },
   "dependencies": {
     "@google-cloud/pubsub": "^0.14.3",

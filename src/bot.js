@@ -21,11 +21,6 @@ const PubSub = require(`@google-cloud/pubsub`);
 const {google} = require('googleapis');
 const {auth} = require('google-auth-library');
 const {HangoutsChatTextMessage, AddedToSpaceTextMessage, AddedToSpaceMessage, RemovedFromSpaceMessage, CardClickedMessage} = require('./message')
-const express = require('express');
-const bodyparser = require('body-parser');
-const app = express()
-    .use(bodyparser.urlencoded({extended: false}))
-    .use(bodyparser.json());
 
 class HangoutsChatBot extends Adapter {
 
@@ -69,13 +64,14 @@ class HangoutsChatBot extends Adapter {
       thread = undefined,
       text = '',
       cardString = '[]',
-      httpRes = undefined) {
+      httpRes = undefined,
+      done = ()=>{}) {
     if (text == '' && cardString == '[]') {
       throw new Error('You cannot send an empty message.');
     }
     const data = this.mapToGoogleChatResponse(space, text, cardString, thread);
     this.robot.logger.info('Sending a message to space: ' + space);
-    this.createMessageUsingRestApi_(space, data);
+    this.createMessageUsingRestApi_(space, data, done);
   }
 
   mapToGoogleChatResponse(space, text, cardString, thread) {
@@ -108,10 +104,12 @@ class HangoutsChatBot extends Adapter {
         undefined,
         strings[0],
         strings[1],
-        undefined);
-    if (envelope.message) {
-      envelope.message.setHandled();
-    }
+        undefined,
+        ()=>{
+          if (envelope.message) {
+            console.log("from send envelope.message.httpRes.end()")
+          }      
+        });
   }
 
   /**
@@ -126,9 +124,9 @@ class HangoutsChatBot extends Adapter {
    *     </ul>
    */
   reply(envelope, ...strings) {
+    console.log(envelope, strings)
     if (!envelope.message) {
-      throw new Error(
-          'When sending a reply, the envelope must contain a message');
+      throw new Error('When sending a reply, the envelope must contain a message');
     }
     this.postMessage_(
         this.getSpaceFromEnvelope_(envelope),
@@ -136,7 +134,7 @@ class HangoutsChatBot extends Adapter {
         strings[0],
         strings[1],
         envelope.message.httpRes,
-        true);
+        ()=>{});
   }
 
   /**
@@ -164,14 +162,14 @@ class HangoutsChatBot extends Adapter {
    * @param {string} space The space in which the message should be created.
    * @param {Object} message The Message REST resource that should be added.
    */
-  createMessageUsingRestApi_(space, message) {
-    this.chatPromise.then((chat) =>
-        chat.spaces.messages.create({
-            parent: space,
-            requestBody: message
-        }))
-        .catch((err) =>
-            this.robot.logger.error('Message creation failed.', err));
+  createMessageUsingRestApi_(space, message, done = ()=>{}) {
+    this.chatPromise.then((chat) => {
+      chat.spaces.messages.create({
+        parent: space,
+        requestBody: message
+      })
+      done()
+    }).catch((err) => this.robot.logger.error('Message creation failed.', err));
   }
 
   /**
@@ -210,7 +208,7 @@ class HangoutsChatBot extends Adapter {
 
 
   /** Invoked when Event is received from Hangouts Chat. */
-  onEventReceived(event, res) {
+  onEventReceived(event, res, done) {
     const message = event.message;
     const space = event.space;
     let user = new User(event.user.name, event.user);
@@ -265,8 +263,10 @@ class HangoutsChatBot extends Adapter {
         this.robot.logger.error('Unrecognized event type: ' + event.type);
         return;
     }
-    this.receive(hangoutsChatMessage);
-    this.emit('received', hangoutsChatMessage);
+    this.robot.receive(hangoutsChatMessage, ()=>{
+      hangoutsChatMessage.finish();
+      hangoutsChatMessage.setHandled();
+    });
   }
 
   /**
@@ -279,8 +279,9 @@ class HangoutsChatBot extends Adapter {
       this.startPubSubClient();
     } else {
       this.robot.router.post('/', (req, res) => {
-        this.onEventReceived(req.body, res);
-        res.end();
+        this.onEventReceived(req.body, res, ()=>{
+          res.status(200).end();
+        });
       })
     }
 
