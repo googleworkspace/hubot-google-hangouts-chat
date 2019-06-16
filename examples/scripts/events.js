@@ -1,3 +1,18 @@
+// Description:
+//   a bot to test this adapter
+//
+// Dependencies:
+//
+// Configuration:
+//
+// Commands:
+//   hubot help - Replies with instructions on how to use this script
+//
+// Notes:
+//
+// Author:
+//   joeyguerra
+
 /**
  * Copyright 2018 Google Inc.
  *
@@ -14,27 +29,22 @@
  * limitations under the License.
  */
 
+ 
 'use strict'
 
 let spaceCount = 0;
 
 module.exports = function(robot) {
-  /** Replies with instructions on how to use this script. */
   robot.hear(
       /help/i,
-      (res) => res.reply('Try adding the bot to the space directly or ' +
-                         'through an @mention. Also, try removing and ' +
-                         're-adding the bot to the room'));
+      (res) => res.reply(`Try adding the bot to the space directly or through an @mention. Also, try removing and re-adding the bot to the room`));
 
   /** Replies to the ADDED_TO_SPACE event. */
   robot.onAddToSpace(
       (res) => {
         spaceCount++;
         res.reply(
-            'Thank you for adding me to the room' +
-            (res.message.text ? ' using an @mention! ' : '! ') +
-            'I am now a member of ' + spaceCount + ' spaces.');
-
+            `Thank you for adding me to the room ${res.message.text ? ' using an @mention! ' : '! '} I am now a member of ${spaceCount} spaces.`);
       });
 
   /**

@@ -73,7 +73,12 @@ class HangoutsChatBot extends Adapter {
     if (text == '' && cardString == '[]') {
       throw new Error('You cannot send an empty message.');
     }
+    const data = this.mapToGoogleChatResponse(space, text, cardString, thread);
+    this.robot.logger.info('Sending a message to space: ' + space);
+    this.createMessageUsingRestApi_(space, data);
+  }
 
+  mapToGoogleChatResponse(space, text, cardString, thread) {
     let data = {
       space: {
         name: space,
@@ -81,17 +86,10 @@ class HangoutsChatBot extends Adapter {
       text,
       cards: JSON.parse(cardString),
     };
-
     if (thread) {
       data.thread = thread;
     }
-
-    this.robot.logger.info('Sending a message to space: ' + space);
-    if (httpRes) {
-      httpRes.json(data);
-    } else {
-      this.createMessageUsingRestApi_(space, data);
-    }
+    return data;
   }
 
   /**
@@ -176,18 +174,6 @@ class HangoutsChatBot extends Adapter {
             this.robot.logger.error('Message creation failed.', err));
   }
 
-  /** Activates HTTP listener and sets up handler to handle events. */
-  startHttpServer() {
-    // Create an event handler to handle messages.
-    app.post('/', (req, res) => {
-      this.onEventReceived(req.body, res);
-    });
-    // Listen for new messages.
-    app.listen(this.port, () => {
-      this.robot.logger.info(`Server is running in port - ${this.port}`);
-    });
-  }
-
   /**
    * Initializes the Cloud Pub/Sub Subscriber, establishes connection to the
    * Subscription and sets up handler to handle events.
@@ -240,8 +226,8 @@ class HangoutsChatBot extends Adapter {
             message
                 ? new AddedToSpaceTextMessage(
                     user,
-                    // For empty @mention's, argumentText is undefined.
-                    message.argumentText || '',
+                    // For empty @mention's, text is undefined.
+                    message.text || '',
                     message.name,
                     space,
                     message.thread,
@@ -256,8 +242,8 @@ class HangoutsChatBot extends Adapter {
       case 'MESSAGE':
         hangoutsChatMessage = new HangoutsChatTextMessage(
           user,
-          // For empty @mention's, argumentText is undefined.
-          message.argumentText || '',
+          // For empty @mention's, text is undefined.
+          message.text || '',
           message.name,
           space,
           message.thread,
@@ -279,22 +265,8 @@ class HangoutsChatBot extends Adapter {
         this.robot.logger.error('Unrecognized event type: ' + event.type);
         return;
     }
-
-    // Pass the message to the Hubot bot
-    this.robot.receive(hangoutsChatMessage, () => {
-      // For HTTP bots, only `res.reply()` uses the synchronous response. Hence,
-      // if a bot handles the message without calling reply, an HTTP response
-      // won't be sent. In this case, Hangouts Chat will assume that the request
-      // timed out and retry. To avoid this retry behavior, we automatically
-      // send a success response if the user called `res.send()` or if it is a
-      // REMOVED_FROM_SPACE event. The user can also force this behavior by
-      // calling message.setHandled() or message.finish().
-      if (!this.isPubSub
-          && (hangoutsChatMessage.handled || hangoutsChatMessage.done)
-          && !res.headersSent) {
-        res.sendStatus(200);
-      }
-    });
+    this.receive(hangoutsChatMessage);
+    this.emit('received', hangoutsChatMessage);
   }
 
   /**
@@ -306,8 +278,10 @@ class HangoutsChatBot extends Adapter {
       // Connect to PubSub subscription
       this.startPubSubClient();
     } else {
-      // Begin listening at HTTP endpoint
-      this.startHttpServer();
+      this.robot.router.post('/', (req, res) => {
+        this.onEventReceived(req.body, res);
+        res.end();
+      })
     }
 
     this.robot.logger.info('Hangouts Chat adapter initialized successfully');
