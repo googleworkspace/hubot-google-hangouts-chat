@@ -271,7 +271,8 @@ class HangoutsChatBot extends Adapter {
 
   /**
    * Sets up adapter for communicating with Hangouts Chat. Hubot invokes this
-   * message during initialization.
+   * message during initialization. Need to always respond otherwise you'll see the 
+   * "hubot is not responding" message in chat.
    */
   run() {
     if (this.isPubSub) {
