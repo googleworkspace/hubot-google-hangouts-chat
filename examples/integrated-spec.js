@@ -7,7 +7,6 @@ const {auth} = require('google-auth-library');
 const Path = require('path');
 const ROOT = __dirname;
 const Robot = require('../node_modules/hubot/src/robot.js')
-const Response = require('../node_modules/hubot/src/response.js')
 const expect = require('chai').expect
 const {RemovedFromSpaceMessage} = require('../src/message.js')
 
