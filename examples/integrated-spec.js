@@ -128,11 +128,4 @@ describe('Testing with a running Hubot', () => {
             .header('Content-Type', 'application/json')
             .post(JSON.stringify(removedFromRoom))((err, res, body)=>{});
     })
-
-
-})
-
-after(done => {
-    //robot.shutdown()
-    done()
 })

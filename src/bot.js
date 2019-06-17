@@ -27,8 +27,7 @@ class HangoutsChatBot extends Adapter {
   constructor(robot, options) {
     super(robot);
 
-    this.subscriptionName =
-        `projects/${options.projectId}/subscriptions/${options.subscriptionId}`;
+    this.subscriptionName = `projects/${options.projectId}/subscriptions/${options.subscriptionId}`;
     this.isPubSub = options.isPubSub;
     this.port = options.port;
 
@@ -266,6 +265,7 @@ class HangoutsChatBot extends Adapter {
     this.robot.receive(hangoutsChatMessage, ()=>{
       hangoutsChatMessage.finish();
       hangoutsChatMessage.setHandled();
+      done();
     });
   }
 
