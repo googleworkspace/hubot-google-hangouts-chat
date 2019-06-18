@@ -123,8 +123,8 @@ class HangoutsChatBot extends Adapter {
     const text = strings[0];
     const cardString = strings[1];
     const data = this.mapToGoogleChatResponse(space, text, cardString, thread);
-    this.robot.logger.info('Sending a message to space: ' + space);
-    this.createMessageUsingRestApi_(space, data);
+    this.robot.logger.info('Adding message to the response: ' + space);
+    envelope.message.httpRes.locals.messages.push(data)
   }
 
   /**
@@ -197,7 +197,8 @@ class HangoutsChatBot extends Adapter {
 
 
   /** Invoked when Event is received from Hangouts Chat. */
-  onEventReceived(event, res) {
+  onEventReceived(req, res, done = ()=>{}) {
+    const event = req.body;
     const message = event.message;
     const space = event.space;
     let user = new User(event.user.name, event.user);
@@ -252,7 +253,9 @@ class HangoutsChatBot extends Adapter {
         this.robot.logger.error('Unrecognized event type: ' + event.type);
         return;
     }
-    this.robot.receive(hangoutsChatMessage);
+    this.robot.receive(hangoutsChatMessage, ()=>{
+      done();
+    });
   }
 
   /**
@@ -266,8 +269,11 @@ class HangoutsChatBot extends Adapter {
       this.startPubSubClient();
     } else {
       this.robot.router.post('/', (req, res) => {
-        this.onEventReceived(req.body, res);
-        res.status(200).end();
+        res.locals["messages"] = []
+        this.onEventReceived(req, res, ()=>{
+          if(res.locals.messages.length > 0) res.json(res.locals.messages);
+          res.status(200).end();
+        });
       })
     }
 

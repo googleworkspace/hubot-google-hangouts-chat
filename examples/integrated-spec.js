@@ -59,32 +59,19 @@ describe('Testing with a running Hubot', () => {
         robot.run();
         dmInRoom.message.text = '@hubot help';
         let counter = 0;
-        robot.adapter.chatPromise = new Promise((resolve, reject)=>{
-            resolve({
-                spaces: {
-                    messages: {
-                        create(resp){
-                            let text = resp.requestBody.text;
-                            counter++;
-                            const found = ["Try sending",
-                            "Try the following text commands",
-                            "Try adding the bot to the space",
-                            "I'm responding to help"].find( f => text.indexOf(f) > -1);
-                            expect(found).to.be.ok;
-                            if(counter == 2) {
-                                robot.shutdown();
-                                done();
-                            }
-                        }
-                    }
-                }
-            });
-        });
-
         robot.http(`http://localhost:${process.env.PORT}/`)
             .header('Content-Type', 'application/json')
             .post(JSON.stringify(dmInRoom))((err, res, body)=>{
-                expect(res.statusCode).to.be.eql(200)
+                const messages = JSON.parse(body);
+                messages.forEach(m => {
+                    let found = ["Try sending",
+                        "Try the following text commands",
+                        "Try adding the bot to the space",
+                        "I'm responding to help"].find( f => m.text.indexOf(f) > -1);
+                    expect(found).to.be.ok;
+                })
+                robot.shutdown();
+                done();
             });
     });
 
@@ -96,27 +83,14 @@ describe('Testing with a running Hubot', () => {
         robot.run();
 
         dmInRoom.message.text = '@hubot card';
-
-        robot.adapter.chatPromise = new Promise((resolve, reject)=>{
-            resolve({
-                spaces: {
-                    messages: {
-                        create(resp){
-                            let card = resp.requestBody.cards[0];
-                            expect(card.header.title).to.eql('title');
-                            expect(card.sections[0].widgets[0].buttons[0].textButton.text).to.eql('Click Me!');
-                            robot.shutdown();
-                            done();
-                        }
-                    }
-                }
-            })
-        });
-
         robot.http(`http://localhost:${process.env.PORT}/`)
             .header('Content-Type', 'application/json')
             .post(JSON.stringify(dmInRoom))((err, res, body)=>{
-                expect(res.statusCode).to.be.eql(200)
+                let card = JSON.parse(body)[0].cards[0];
+                expect(card.header.title).to.eql('title');
+                expect(card.sections[0].widgets[0].buttons[0].textButton.text).to.eql('Click Me!');
+                robot.shutdown();
+                done();
             });
     });
 
@@ -126,24 +100,13 @@ describe('Testing with a running Hubot', () => {
             botOptions.enableHttpd, botOptions.botName, botOptions.botAlias);
         robot.load(Path.resolve(ROOT, "scripts"));
         robot.run();
-        robot.adapter.chatPromise = new Promise((resolve, reject)=>{
-            resolve({
-                spaces: {
-                    messages: {
-                        create(resp){
-                            let text = resp.requestBody.text;
-                            expect(text).to.include("Thank you for adding me to the room")
-                            robot.shutdown();
-                            done();
-                        }
-                    }
-                }
-            })
-        })
         robot.http(`http://localhost:${process.env.PORT}/`)
             .header('Content-Type', 'application/json')
             .post(JSON.stringify(addedToRoom))((err, res, body)=>{
-                expect(res.statusCode).to.be.eql(200)
+                let text = JSON.parse(body)[0].text;
+                expect(text).to.include("Thank you for adding me to the room")
+                robot.shutdown();
+                done();
             });
     });
 
@@ -155,13 +118,13 @@ describe('Testing with a running Hubot', () => {
         robot.run();
         robot.onRemoveFromSpace((resp)=>{
             expect(resp.message).to.be.an.instanceof(RemovedFromSpaceMessage)
-            robot.shutdown();
-            done()
-        })
+        });
         robot.http(`http://localhost:${process.env.PORT}/`)
             .header('Content-Type', 'application/json')
             .post(JSON.stringify(removedFromRoom))((err, res, body)=>{
-                expect(res.statusCode).to.be.eql(200)
+                expect(res.statusCode).to.eql(200);
+                robot.shutdown();
+                done()
             });
     });
 });
