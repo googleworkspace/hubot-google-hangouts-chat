@@ -62,18 +62,16 @@ class HangoutsChatBot extends Adapter {
       space,
       thread = undefined,
       text = '',
-      cardString = '[]',
-      httpRes = undefined,
-      done = ()=>{}) {
+      cardString = '[]') {
     if (text == '' && cardString == '[]') {
       throw new Error('You cannot send an empty message.');
     }
     const data = this.mapToGoogleChatResponse(space, text, cardString, thread);
     this.robot.logger.info('Sending a message to space: ' + space);
-    this.createMessageUsingRestApi_(space, data, done);
+    this.createMessageUsingRestApi_(space, data);
   }
 
-  mapToGoogleChatResponse(space, text, cardString, thread) {
+  mapToGoogleChatResponse(space, text, cardString = '[]', thread) {
     let data = {
       space: {
         name: space,
@@ -102,13 +100,7 @@ class HangoutsChatBot extends Adapter {
         this.getSpaceFromEnvelope_(envelope),
         undefined,
         strings[0],
-        strings[1],
-        undefined,
-        ()=>{
-          if (envelope.message) {
-            console.log("from send envelope.message.httpRes.end()")
-          }      
-        });
+        strings[1]);
   }
 
   /**
@@ -123,17 +115,16 @@ class HangoutsChatBot extends Adapter {
    *     </ul>
    */
   reply(envelope, ...strings) {
-    console.log(envelope, strings)
     if (!envelope.message) {
       throw new Error('When sending a reply, the envelope must contain a message');
     }
-    this.postMessage_(
-        this.getSpaceFromEnvelope_(envelope),
-        envelope.message.thread,
-        strings[0],
-        strings[1],
-        envelope.message.httpRes,
-        ()=>{});
+    const space = this.getSpaceFromEnvelope_(envelope);
+    const thread = envelope.message.thread;
+    const text = strings[0];
+    const cardString = strings[1];
+    const data = this.mapToGoogleChatResponse(space, text, cardString, thread);
+    this.robot.logger.info('Sending a message to space: ' + space);
+    this.createMessageUsingRestApi_(space, data);
   }
 
   /**
@@ -161,13 +152,12 @@ class HangoutsChatBot extends Adapter {
    * @param {string} space The space in which the message should be created.
    * @param {Object} message The Message REST resource that should be added.
    */
-  createMessageUsingRestApi_(space, message, done = ()=>{}) {
+  createMessageUsingRestApi_(space, message) {
     this.chatPromise.then((chat) => {
       chat.spaces.messages.create({
         parent: space,
         requestBody: message
       })
-      done()
     }).catch((err) => this.robot.logger.error('Message creation failed.', err));
   }
 
@@ -207,7 +197,7 @@ class HangoutsChatBot extends Adapter {
 
 
   /** Invoked when Event is received from Hangouts Chat. */
-  onEventReceived(event, res, done) {
+  onEventReceived(event, res) {
     const message = event.message;
     const space = event.space;
     let user = new User(event.user.name, event.user);
@@ -262,11 +252,7 @@ class HangoutsChatBot extends Adapter {
         this.robot.logger.error('Unrecognized event type: ' + event.type);
         return;
     }
-    this.robot.receive(hangoutsChatMessage, ()=>{
-      hangoutsChatMessage.finish();
-      hangoutsChatMessage.setHandled();
-      done();
-    });
+    this.robot.receive(hangoutsChatMessage);
   }
 
   /**
@@ -280,9 +266,8 @@ class HangoutsChatBot extends Adapter {
       this.startPubSubClient();
     } else {
       this.robot.router.post('/', (req, res) => {
-        this.onEventReceived(req.body, res, ()=>{
-          res.status(200).end();
-        });
+        this.onEventReceived(req.body, res);
+        res.status(200).end();
       })
     }
 

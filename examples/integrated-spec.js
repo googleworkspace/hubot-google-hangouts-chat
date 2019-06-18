@@ -1,7 +1,7 @@
-const dmInRoom = require('./messages-from-gchat/dm-in-room.json');
-const addedToRoom = require('./messages-from-gchat/add-to-room.json');
-const removedFromRoom = require('./messages-from-gchat/remove-from-room.json');
-const {spaces} = require('./messages-from-gchat/spaces-list.json');
+const dmInRoom = require('./hangouts-chat-messages/dm-in-room.json');
+const addedToRoom = require('./hangouts-chat-messages/add-to-room.json');
+const removedFromRoom = require('./hangouts-chat-messages/remove-from-room.json');
+const {spaces} = require('./hangouts-chat-messages/spaces-list.json');
 const {google} = require('googleapis');
 const {auth} = require('google-auth-library');
 const Path = require('path');
@@ -52,29 +52,41 @@ const botOptions = {
 
 describe('Testing with a running Hubot', () => {
     it('Help me Hubot', (done) => {
-        process.env.PORT = 3000
+        process.env.PORT = 3000;
         const robot = new Robot(botOptions.adapterPath, botOptions.adapterName,
             botOptions.enableHttpd, botOptions.botName, botOptions.botAlias);
         robot.load(Path.resolve(ROOT, "scripts"));
         robot.run();
-        
         dmInRoom.message.text = '@hubot help';
-        let counter = 0
-        robot.adapter.reply = (envelope, resp)=>{
-            counter++
-            const found = ["Try sending",
-            "Try the following text commands",
-            "Try adding the bot to the space"].find( f => resp.indexOf(f) > -1)
-            expect(found).to.be.ok
-            if(counter == 2) {
-                robot.shutdown();
-                done();
-            }
-        }
+        let counter = 0;
+        robot.adapter.chatPromise = new Promise((resolve, reject)=>{
+            resolve({
+                spaces: {
+                    messages: {
+                        create(resp){
+                            let text = resp.requestBody.text;
+                            counter++;
+                            const found = ["Try sending",
+                            "Try the following text commands",
+                            "Try adding the bot to the space",
+                            "I'm responding to help"].find( f => text.indexOf(f) > -1);
+                            expect(found).to.be.ok;
+                            if(counter == 2) {
+                                robot.shutdown();
+                                done();
+                            }
+                        }
+                    }
+                }
+            });
+        });
+
         robot.http(`http://localhost:${process.env.PORT}/`)
             .header('Content-Type', 'application/json')
-            .post(JSON.stringify(dmInRoom))((err, res, body)=>{});
-    })
+            .post(JSON.stringify(dmInRoom))((err, res, body)=>{
+                expect(res.statusCode).to.be.eql(200)
+            });
+    });
 
     it('I want to see how a card works', (done) => {
         process.env.PORT = 3001
@@ -84,17 +96,29 @@ describe('Testing with a running Hubot', () => {
         robot.run();
 
         dmInRoom.message.text = '@hubot card';
-        robot.adapter.reply = (envelope, resp, body)=>{
-            const obj = JSON.parse(body)[0]
-            expect(obj.header.title).to.eql('title')
-            expect(obj.sections[0].widgets[0].buttons[0].textButton.text).to.eql('Click Me!')
-            robot.shutdown();
-            done();
-        }
+
+        robot.adapter.chatPromise = new Promise((resolve, reject)=>{
+            resolve({
+                spaces: {
+                    messages: {
+                        create(resp){
+                            let card = resp.requestBody.cards[0];
+                            expect(card.header.title).to.eql('title');
+                            expect(card.sections[0].widgets[0].buttons[0].textButton.text).to.eql('Click Me!');
+                            robot.shutdown();
+                            done();
+                        }
+                    }
+                }
+            })
+        });
+
         robot.http(`http://localhost:${process.env.PORT}/`)
             .header('Content-Type', 'application/json')
-            .post(JSON.stringify(dmInRoom))((err, res, body)=>{});
-    })
+            .post(JSON.stringify(dmInRoom))((err, res, body)=>{
+                expect(res.statusCode).to.be.eql(200)
+            });
+    });
 
     it('Bot added to a room', (done) => {
         process.env.PORT = 3002
@@ -102,15 +126,26 @@ describe('Testing with a running Hubot', () => {
             botOptions.enableHttpd, botOptions.botName, botOptions.botAlias);
         robot.load(Path.resolve(ROOT, "scripts"));
         robot.run();
-        robot.adapter.reply = (envelope, resp)=>{
-            expect(resp).to.include("Thank you for adding me to the room")
-            robot.shutdown();
-            done();
-        }
+        robot.adapter.chatPromise = new Promise((resolve, reject)=>{
+            resolve({
+                spaces: {
+                    messages: {
+                        create(resp){
+                            let text = resp.requestBody.text;
+                            expect(text).to.include("Thank you for adding me to the room")
+                            robot.shutdown();
+                            done();
+                        }
+                    }
+                }
+            })
+        })
         robot.http(`http://localhost:${process.env.PORT}/`)
             .header('Content-Type', 'application/json')
-            .post(JSON.stringify(addedToRoom))((err, res, body)=>{});
-    })
+            .post(JSON.stringify(addedToRoom))((err, res, body)=>{
+                expect(res.statusCode).to.be.eql(200)
+            });
+    });
 
     it('Bot removed from a room', (done) => {
         process.env.PORT = 3003
@@ -125,6 +160,8 @@ describe('Testing with a running Hubot', () => {
         })
         robot.http(`http://localhost:${process.env.PORT}/`)
             .header('Content-Type', 'application/json')
-            .post(JSON.stringify(removedFromRoom))((err, res, body)=>{});
-    })
-})
+            .post(JSON.stringify(removedFromRoom))((err, res, body)=>{
+                expect(res.statusCode).to.be.eql(200)
+            });
+    });
+});

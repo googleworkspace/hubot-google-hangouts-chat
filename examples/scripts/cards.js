@@ -6,7 +6,6 @@
 // Configuration:
 //
 // Commands:
-//   hubot help - will display some help
 //   hubot card - Replies in the same thread as the received message
 //
 // Notes:
@@ -36,6 +35,10 @@ module.exports = function(robot) {
   robot.hear(
       /help/i,
       (res) => res.reply("Try sending 'card' to see a card example."));
+      
+  robot.respond(/help/i, res => {
+    res.reply("I'm responding to help");
+  });
 
   robot.hear(
       /card/i,
