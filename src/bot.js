@@ -41,7 +41,7 @@ class HangoutsChatBot extends Adapter {
         version: 'v1',
         auth: credentials,
       })).catch((err) =>
-        robot.logger.info(`Hangouts Chat Authentication Failed! If you want to reply asynchronously, you'll need to setup a service account. ${err}`));
+        robot.logger.warning(`Hangouts Chat Authentication Failed! If you want to reply asynchronously, you'll need to setup a service account. ${err}`));
   }
 
   /**
@@ -64,12 +64,12 @@ class HangoutsChatBot extends Adapter {
     if (text == '' && cardString == '[]') {
       throw new Error('You cannot send an empty message.');
     }
-    const data = this.mapToGoogleChatResponse(space, text, cardString, thread);
+    const data = this.mapToHangoutsChatResponse(space, text, cardString, thread);
     this.robot.logger.info('Sending a message to space: ' + space);
     this.createMessageUsingRestApi_(space, data);
   }
 
-  mapToGoogleChatResponse(space, text, cardString = '[]', thread) {
+  mapToHangoutsChatResponse(space, text, cardString = '[]', thread) {
     let data = {
       space: {
         name: space,
@@ -120,7 +120,7 @@ class HangoutsChatBot extends Adapter {
     const thread = envelope.message.thread;
     const text = strings[0];
     const cardString = strings[1];
-    const data = this.mapToGoogleChatResponse(space, text, cardString, thread);
+    const data = this.mapToHangoutsChatResponse(space, text, cardString, thread);
     this.robot.logger.info('Adding message to the response: ' + space);
     envelope.message.httpRes.locals.messages.push(data)
   }
@@ -269,6 +269,9 @@ class HangoutsChatBot extends Adapter {
       this.robot.router.post('/', (req, res) => {
         res.locals["messages"] = []
         this.onEventReceived(req, res, ()=>{
+          if(res.locals.messages.length > 1){
+            this.robot.logger.warning(`Design assumes a 1 to 1 relationship but we detected more than 1 response. # of messages = ${res.locals.messages.length}`)
+          }      
           if(res.locals.messages.length > 0) res.json(res.locals.messages);
           res.status(200).end();
         });
