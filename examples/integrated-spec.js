@@ -28,6 +28,7 @@ google.chat = options => {
         }
     }
 };
+auth.getClient = () => new Promise((resolve, reject) => {resolve();});
 
 Robot.prototype.loadAdapter = function(adapter) {
     try {
@@ -58,14 +59,12 @@ describe('Testing with a running Hubot', () => {
         robot.http(`http://localhost:${process.env.PORT}/`)
             .header('Content-Type', 'application/json')
             .post(JSON.stringify(dmInRoom))((err, res, body)=>{
-                const messages = JSON.parse(body);
-                messages.forEach(m => {
-                    let found = ["Try sending",
-                        "Try the following text commands",
-                        "Try adding the bot to the space",
-                        "I'm responding to help"].find( f => m.text.indexOf(f) > -1);
-                    expect(found).to.be.ok;
-                })
+                const message = JSON.parse(body);
+                let found = ["Try sending",
+                    "Try the following text commands",
+                    "Try adding the bot to the space",
+                    "I'm responding to help"].find( f => message.text.indexOf(f) > -1);
+                expect(found).to.be.ok;
                 robot.shutdown();
                 done();
             });
@@ -82,7 +81,7 @@ describe('Testing with a running Hubot', () => {
         robot.http(`http://localhost:${process.env.PORT}/`)
             .header('Content-Type', 'application/json')
             .post(JSON.stringify(dmInRoom))((err, res, body)=>{
-                let card = JSON.parse(body)[0].cards[0];
+                let card = JSON.parse(body).cards[0];
                 expect(card.header.title).to.eql('title');
                 expect(card.sections[0].widgets[0].buttons[0].textButton.text).to.eql('Click Me!');
                 robot.shutdown();
@@ -99,7 +98,7 @@ describe('Testing with a running Hubot', () => {
         robot.http(`http://localhost:${process.env.PORT}/`)
             .header('Content-Type', 'application/json')
             .post(JSON.stringify(addedToRoom))((err, res, body)=>{
-                let text = JSON.parse(body)[0].text;
+                let text = JSON.parse(body).text;
                 expect(text).to.include("Thank you for adding me to the room")
                 robot.shutdown();
                 done();

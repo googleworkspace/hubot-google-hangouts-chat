@@ -22,6 +22,7 @@ const {google} = require('googleapis');
 const {auth} = require('google-auth-library');
 const {HangoutsChatTextMessage, AddedToSpaceTextMessage, AddedToSpaceMessage, RemovedFromSpaceMessage, CardClickedMessage} = require('./message')
 
+let counter = 0;
 class HangoutsChatBot extends Adapter {
 
   constructor(robot, options) {
@@ -100,7 +101,6 @@ class HangoutsChatBot extends Adapter {
         strings[0],
         strings[1]);
   }
-
   /**
    * Replies to a message in Hangouts Chat. If the space is a room, the message
    * is posted in the same thread as the message specified in the envelope.
@@ -121,10 +121,14 @@ class HangoutsChatBot extends Adapter {
     const text = strings[0];
     const cardString = strings[1];
     const data = this.mapToHangoutsChatResponse(space, text, cardString, thread);
-    this.robot.logger.info('Adding message to the response: ' + space);
-    envelope.message.httpRes.locals.messages.push(data)
+    this.robot.logger.debug('Adding message to the response: ' + space);
+    let messages = envelope.message.httpRes.locals.messages;
+    messages.push(data);
+    if(messages.length > 1){
+      this.robot.logger.warning(`Design assumes a 1 to 1 relationship and more than 1 response was detected. # of messages = ${messages.length}`)
+      this.send(envelope, strings);
+    }
   }
-
   /**
    * Gets the space name from the envelope object. The envelope must have either
    * a message or a room. If it has both, the message is used.
@@ -267,15 +271,16 @@ class HangoutsChatBot extends Adapter {
       this.startPubSubClient();
     } else {
       this.robot.router.post('/', (req, res) => {
-        res.locals["messages"] = []
-        this.onEventReceived(req, res, ()=>{
-          if(res.locals.messages.length > 1){
-            this.robot.logger.warning(`Design assumes a 1 to 1 relationship but we detected more than 1 response. # of messages = ${res.locals.messages.length}`)
-          }      
-          if(res.locals.messages.length > 0) res.json(res.locals.messages);
+        res.locals.messages = [];
+        this.onEventReceived(req, res, () => {
+          let messages = res.locals.messages;
+          let oneResponsePerGivenMessage = messages.shift();
+          if(oneResponsePerGivenMessage){
+            res.json(oneResponsePerGivenMessage);
+          }
           res.status(200).end();
         });
-      })
+      });
     }
 
     this.robot.logger.info('Hangouts Chat adapter initialized successfully');
