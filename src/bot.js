@@ -122,7 +122,7 @@ class HangoutsChatBot extends Adapter {
     const cardString = strings[1];
     const data = this.mapToHangoutsChatResponse(space, text, cardString, thread);
     this.robot.logger.debug('Adding message to the response: ' + space);
-    if(!envelope.message.httpRes.headersSent){
+    if(!this.isPubSub && !envelope.message.httpRes.headersSent){
       envelope.message.httpRes.json(data);
     } else {
       this.robot.logger.warning('Design assumes a 1 to 1 relationship and more than 1 response was detected.')
