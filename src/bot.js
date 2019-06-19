@@ -41,9 +41,7 @@ class HangoutsChatBot extends Adapter {
         version: 'v1',
         auth: credentials,
       })).catch((err) =>
-        robot.logger.error(
-            'Hangouts Chat Authentication Failed! Please provide the ' +
-            'credentials for your service account.\n' + err));
+        robot.logger.info(`Hangouts Chat Authentication Failed! If you want to reply asynchronously, you'll need to setup a service account. ${err}`));
   }
 
   /**

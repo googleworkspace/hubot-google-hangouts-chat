@@ -29,10 +29,6 @@ google.chat = options => {
     }
 };
 
-auth.getClient = options => {
-    return Promise.resolve();
-};
-
 Robot.prototype.loadAdapter = function(adapter) {
     try {
         this.adapter = require(adapter).use(this);
