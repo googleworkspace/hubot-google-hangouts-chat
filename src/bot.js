@@ -122,10 +122,10 @@ class HangoutsChatBot extends Adapter {
     const cardString = strings[1];
     const data = this.mapToHangoutsChatResponse(space, text, cardString, thread);
     this.robot.logger.debug('Adding message to the response: ' + space);
-    let messages = envelope.message.httpRes.locals.messages;
-    messages.push(data);
-    if(messages.length > 1){
-      this.robot.logger.warning(`Design assumes a 1 to 1 relationship and more than 1 response was detected. # of messages = ${messages.length}`)
+    if(!envelope.message.httpRes.headersSent){
+      envelope.message.httpRes.json(data);
+    } else {
+      this.robot.logger.warning('Design assumes a 1 to 1 relationship and more than 1 response was detected.')
       this.send(envelope, strings);
     }
   }
@@ -271,13 +271,7 @@ class HangoutsChatBot extends Adapter {
       this.startPubSubClient();
     } else {
       this.robot.router.post('/', (req, res) => {
-        res.locals.messages = [];
         this.onEventReceived(req, res, () => {
-          let messages = res.locals.messages;
-          let oneResponsePerGivenMessage = messages.shift();
-          if(oneResponsePerGivenMessage){
-            res.json(oneResponsePerGivenMessage);
-          }
           res.status(200).end();
         });
       });
