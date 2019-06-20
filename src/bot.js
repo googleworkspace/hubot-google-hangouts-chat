@@ -126,7 +126,11 @@ class HangoutsChatBot extends Adapter {
       envelope.message.httpRes.json(data);
     } else {
       this.robot.logger.warning('Design assumes a 1 to 1 relationship and more than 1 response was detected.')
-      this.send(envelope, strings);
+      this.postMessage_(
+        this.getSpaceFromEnvelope_(envelope),
+        thread,
+        strings[0],
+        strings[1]);
     }
   }
   /**
