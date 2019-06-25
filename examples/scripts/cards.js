@@ -6,7 +6,7 @@
 // Configuration:
 //
 // Commands:
-//   hubot card - Replies in the same thread as the received message
+//   hubot card - Replies with a card message
 //
 // Notes:
 //
