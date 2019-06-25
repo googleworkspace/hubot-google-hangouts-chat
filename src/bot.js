@@ -129,8 +129,8 @@ class HangoutsChatBot extends Adapter {
       this.postMessage_(
         this.getSpaceFromEnvelope_(envelope),
         thread,
-        strings[0],
-        strings[1]);
+        text,
+        cardString);
     }
   }
   /**
