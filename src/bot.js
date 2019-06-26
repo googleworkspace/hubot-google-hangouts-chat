@@ -54,7 +54,6 @@ class HangoutsChatBot extends Adapter {
    *     the message will be posted in a new thread..
    * @param {string=} text The message text.
    * @param {string=} card The message card JSON string.
-   * @param {Object=} httpRes The HTTP response for the request.
    */
   postMessage_(
       space,
