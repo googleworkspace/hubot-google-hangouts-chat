@@ -48,7 +48,7 @@ const botOptions = {
 };
 
 describe('Testing with a running Hubot', () => {
-    it('Help me Hubot', (done) => {
+    it('Help me Hubot', done => {
         process.env.PORT = 3000;
         const robot = new Robot(botOptions.adapterPath, botOptions.adapterName,
             botOptions.enableHttpd, botOptions.botName, botOptions.botAlias);
@@ -56,18 +56,21 @@ describe('Testing with a running Hubot', () => {
         robot.run();
         dmInRoom.message.text = '@hubot help';
         let counter = 0;
-        robot.http(`http://localhost:${process.env.PORT}/`)
-            .header('Content-Type', 'application/json')
-            .post(JSON.stringify(dmInRoom))((err, res, body)=>{
-                const message = JSON.parse(body);
-                let found = ["Try sending",
-                    "Try the following text commands",
-                    "Try adding the bot to the space",
-                    "I'm responding to help"].find( f => message.text.indexOf(f) > -1);
-                expect(found).to.be.ok;
+        robot.adapter.createMessageUsingRestApi_ = (space, message) => {
+            counter++
+            let found = ["Try sending",
+                "Try the following text commands",
+                "Try adding the bot to the space",
+                "I'm responding to help"].find( f => message.text.indexOf(f) > -1);
+            expect(found).to.be.ok;
+            if(counter > 3){
                 robot.shutdown();
                 done();
-            });
+            }
+        }
+        robot.http(`http://localhost:${process.env.PORT}/`)
+            .header('Content-Type', 'application/json')
+            .post(JSON.stringify(dmInRoom))((err, res, body)=>{});
     });
 
     it('I want to see how a card works', (done) => {
@@ -78,15 +81,17 @@ describe('Testing with a running Hubot', () => {
         robot.run();
 
         dmInRoom.message.text = '@hubot card';
+        robot.adapter.createMessageUsingRestApi_ = (space, message) => {
+            let card = message.cards[0];
+            expect(card.header.title).to.eql('title');
+            expect(card.sections[0].widgets[0].buttons[0].textButton.text).to.eql('Click Me!');
+            robot.shutdown();
+            done();
+        }
+
         robot.http(`http://localhost:${process.env.PORT}/`)
             .header('Content-Type', 'application/json')
-            .post(JSON.stringify(dmInRoom))((err, res, body)=>{
-                let card = JSON.parse(body).cards[0];
-                expect(card.header.title).to.eql('title');
-                expect(card.sections[0].widgets[0].buttons[0].textButton.text).to.eql('Click Me!');
-                robot.shutdown();
-                done();
-            });
+            .post(JSON.stringify(dmInRoom))((err, res, body)=>{});
     });
 
     it('Bot added to a room', (done) => {
@@ -95,14 +100,16 @@ describe('Testing with a running Hubot', () => {
             botOptions.enableHttpd, botOptions.botName, botOptions.botAlias);
         robot.load(Path.resolve(ROOT, "scripts"));
         robot.run();
+        robot.adapter.createMessageUsingRestApi_ = (space, message) => {
+            let text = message.text;
+            expect(text).to.include("Thank you for adding me to the room")
+            robot.shutdown();
+            done();
+        }
+
         robot.http(`http://localhost:${process.env.PORT}/`)
             .header('Content-Type', 'application/json')
-            .post(JSON.stringify(addedToRoom))((err, res, body)=>{
-                let text = JSON.parse(body).text;
-                expect(text).to.include("Thank you for adding me to the room")
-                robot.shutdown();
-                done();
-            });
+            .post(JSON.stringify(addedToRoom))((err, res, body)=>{});
     });
 
     it('Bot removed from a room', (done) => {

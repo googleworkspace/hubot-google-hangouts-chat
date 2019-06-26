@@ -22,7 +22,6 @@ const {google} = require('googleapis');
 const {auth} = require('google-auth-library');
 const {HangoutsChatTextMessage, AddedToSpaceTextMessage, AddedToSpaceMessage, RemovedFromSpaceMessage, CardClickedMessage} = require('./message')
 
-let counter = 0;
 class HangoutsChatBot extends Adapter {
 
   constructor(robot, options) {
@@ -116,25 +115,15 @@ class HangoutsChatBot extends Adapter {
     if (!envelope.message) {
       throw new Error('When sending a reply, the envelope must contain a message');
     }
-    const space = this.getSpaceFromEnvelope_(envelope);
     const thread = envelope.message.thread;
     const text = strings[0];
     const cardString = strings[1];
-    const data = this.mapToHangoutsChatResponse(space, text, cardString, thread);
-    this.robot.logger.debug('Adding message to the response: ' + space);
-    if(envelope.message.httpRes.headersSent){
-      this.robot.logger.warning('Design assumes a 1 to 1 relationship and more than 1 response was detected.');
-    }
-    if(!this.isPubSub && !envelope.message.httpRes.headersSent){
-      envelope.message.httpRes.json(data);
-    } else {
-      this.postMessage_(
-        this.getSpaceFromEnvelope_(envelope),
-        thread,
-        text,
-        cardString);
-    }
-  }
+    this.postMessage_(
+      this.getSpaceFromEnvelope_(envelope),
+      thread,
+      text,
+      cardString);
+}
   /**
    * Gets the space name from the envelope object. The envelope must have either
    * a message or a room. If it has both, the message is used.
@@ -161,11 +150,11 @@ class HangoutsChatBot extends Adapter {
    * @param {Object} message The Message REST resource that should be added.
    */
   createMessageUsingRestApi_(space, message) {
-    this.chatPromise.then((chat) => {
+    this.chatPromise.then(chat => {
       chat.spaces.messages.create({
         parent: space,
         requestBody: message
-      })
+      });
     }).catch((err) => this.robot.logger.error('Message creation failed.', err));
   }
 
