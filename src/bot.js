@@ -193,8 +193,7 @@ class HangoutsChatBot extends Adapter {
 
 
   /** Invoked when Event is received from Hangouts Chat. */
-  onEventReceived(req, res, done = ()=>{}) {
-    const event = req.body;
+  onEventReceived(event, res, done = ()=>{}) {
     const message = event.message;
     const space = event.space;
     let user = new User(event.user.name, event.user);
@@ -265,7 +264,7 @@ class HangoutsChatBot extends Adapter {
       this.startPubSubClient();
     } else {
       this.robot.router.post('/', (req, res) => {
-        this.onEventReceived(req, res, () => {
+        this.onEventReceived(req.body, res, () => {
           res.status(200).end();
         });
       });
