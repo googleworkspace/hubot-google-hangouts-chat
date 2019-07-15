@@ -1,10 +1,12 @@
 {
   "name": "hubot-google-hangouts-chat",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "Hangouts Chat Adapter for Hubot",
   "main": "main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha 'examples/**/*-spec.js'",
+    "test:dev": "HUBOT_LOG_LEVEL=error mocha 'examples/**/*-spec.js' --watch",
+    "test:dev:verbose": "HUBOT_LOG_LEVEL=all mocha 'examples/**/*-spec.js' --watch"
   },
   "dependencies": {
     "@google-cloud/pubsub": "^0.29.1",
@@ -15,10 +17,12 @@
     "request": "^2.87.0"
   },
   "devDependencies": {
-    "hubot": "^3.3.2"
+    "chai": "^4.2.0",
+    "hubot": ">=3.3.2",
+    "mocha": "^6.1.4"
   },
   "peerDependencies": {
-    "hubot": ">=2.0"
+    "hubot": ">=3.3.2"
   },
   "author": "senthilsk@",
   "license": "Apache-2.0",

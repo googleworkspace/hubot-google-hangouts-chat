@@ -1,3 +1,18 @@
+// Description:
+//   a bot to test this adapter
+//
+// Dependencies:
+//
+// Configuration:
+//
+// Commands:
+//   hubot card - Replies with a card message
+//
+// Notes:
+//
+// Author:
+//   joeyguerra
+
 /**
  * Copyright 2018 Google Inc.
  *
@@ -17,12 +32,14 @@
 'use strict'
 
 module.exports = function(robot) {
-  /** Replies with a list of commands. */
   robot.hear(
       /help/i,
-      (res) => res.reply('Try sending \'card\' to see a card example.'));
+      (res) => res.reply("Try sending 'card' to see a card example."));
+      
+  robot.respond(/help/i, res => {
+    res.reply("I'm responding to help");
+  });
 
-  /** Replies in the same thread as the received message. */
   robot.hear(
       /card/i,
       (res) => res.reply(

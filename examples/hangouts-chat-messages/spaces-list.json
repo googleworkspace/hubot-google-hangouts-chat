@@ -1,0 +1,15 @@
+{
+    "spaces": [
+        {
+            "name": "spaces/AAAApLddd99",
+            "type": "ROOM",
+            "displayName": "testing-chatbots"
+        },
+        {
+            "name": "spaces/AAABK3JclZY",
+            "type": "ROOM",
+            "displayName": "the-falcon"
+        }
+    ],
+    "nextPageToken": "1"
+  }

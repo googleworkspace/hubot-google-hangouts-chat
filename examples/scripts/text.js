@@ -1,3 +1,23 @@
+// Description:
+//   a bot to test this adapter
+//
+// Dependencies:
+//
+// Configuration:
+//
+// Commands:
+//   hubot help - Replies with a list of commands
+//   hubot reply - Replies in the same thread as the received message
+//   hubot send - Sends a message to the same space as the received message. If the sapce is a room, the message appears in a new thread
+//   hubot code - Replies with a code snippet
+//   hubot Save current space - Saves the space name given in the message
+//   hubot Message saved space: <space> - Messages the saved space using the {@code robot#messageRoom} method
+//
+// Notes:
+//
+// Author:
+//   joeyguerra
+
 /**
  * Copyright 2018 Google Inc.
  *
@@ -14,35 +34,29 @@
  * limitations under the License.
  */
 
+ 
 'use strict'
 
 module.exports = function(robot) {
-  /** Replies with a list of commands. */
   robot.hear(
       /help/i,
       (res) => res.reply(
-          'Try the following text commands:\n' +
-          ' - \'reply\'\n' +
-          ' - \'send\'\n' +
-          ' - \'code\'\n' +
-          ' - \'Save current space.\'\n' +
-          ' - \'Message saved space: <message>\'\n'));
+`Try the following text commands:
+- 'reply'
+- 'send
+- 'code
+- 'Save current space.
+- 'Message saved space: <message>`));
 
-  /** Replies in the same thread as the received message. */
   robot.hear(
       /reply/i,
       (res) => res.reply('I am replying in the same thread.'));
 
-  /**
-   * Sends a message to the same space as the received message. If the sapce is
-   * a room, the message appears in a new thread.
-   */
   robot.hear(
       /send/i,
       (res) => res.send(
           'I sent this message to the same space.'));
 
-  /** Replies with a code snippet. */
   robot.hear(
       /code/i,
       (res) => res.reply(
@@ -53,7 +67,6 @@ module.exports = function(robot) {
           ' 1/0.1111111111111111);\n' +
           '```'));
 
-  /** Saves the space name given in the message. */
   robot.hear(
       /Save current space/i,
       (res) => {
@@ -61,7 +74,6 @@ module.exports = function(robot) {
         res.reply('Saved space: ' + robot.savedSpace);
       });
 
-  /** Messages the saved space using the {@code robot#messageRoom} method. */
   robot.hear(
       /Message saved space: (.*)/i,
       (res) => {

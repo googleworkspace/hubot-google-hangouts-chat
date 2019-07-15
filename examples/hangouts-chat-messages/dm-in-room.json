@@ -1,0 +1,57 @@
+{
+    "type": "MESSAGE",
+    "eventTime": "2019-06-07T16:20:49.488079Z",
+    "message": {
+        "name": "spaces/AAAApLddd99/messages/Odd88jfd_8x0.c8d7DDS",
+        "sender": {
+            "name": "users/1",
+            "displayName": "Joey Guerra",
+            "avatarUrl": "https://somebogus.com/a-/asdf-wer23-asda-24qre",
+            "email": "joeyguerra@somebogus.com",
+            "type": "HUMAN"
+        },
+        "createTime": "2019-06-07T16:20:49.488079Z",
+        "text": "@hubot hi",
+        "annotations": [
+            {
+                "type": "USER_MENTION",
+                "startIndex": 0,
+                "length": 7,
+                "userMention": {
+                    "user": {
+                        "name": "users/2",
+                        "displayName": "hubot",
+                        "avatarUrl": "https://somebogus.com/proxy/asjdflkjoiweru9asdf-asdlfjsd_asdfdAS-asdfwee",
+                        "type": "BOT"
+                    },
+                    "type": "MENTION"
+                }
+            }
+        ],
+        "thread": {
+            "name": "spaces/AAAApLddd99/threads/asdfsdfd",
+            "retentionSettings": {
+                "state": "PERMANENT"
+            }
+        },
+        "space": {
+            "name": "spaces/AAAApLddd99",
+            "type": "ROOM",
+            "displayName": "testing-chatbots"
+        },
+        "argumentText": " hi"
+    },
+    "user": {
+        "name": "users/1",
+        "displayName": "Joey Guerra",
+        "avatarUrl": "https://somebogus.com/a-/asdf-wer23-asda-24qre",
+        "email": "joeyguerra@somebogus.com",
+        "type": "HUMAN"
+    },
+    "space": {
+        "name": "spaces/AAAApLddd99",
+        "type": "ROOM",
+        "displayName": "testing-chatbots"
+    },
+    "configCompleteRedirectUrl": "https://chat.google.com/api/bot_config_complete?token=aasdfasdf"
+}
