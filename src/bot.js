@@ -17,7 +17,7 @@
 'use strict'
 
 const {Adapter, User, TextMessage} = require.main.require('hubot/es2015');
-const PubSub = require(`@google-cloud/pubsub`);
+const {PubSub} = require(`@google-cloud/pubsub`);
 const {google} = require('googleapis');
 const {auth} = require('google-auth-library');
 const {HangoutsChatTextMessage, AddedToSpaceTextMessage, AddedToSpaceMessage, RemovedFromSpaceMessage, CardClickedMessage} = require('./message')
@@ -162,7 +162,7 @@ class HangoutsChatBot extends Adapter {
    * Subscription and sets up handler to handle events.
    */
   startPubSubClient() {
-    const pubsub = PubSub();
+    const pubsub = new PubSub();
     this.robot.logger.info(
         `Connecting to Pub/Sub subscription - ${this.subscriptionName}`);
     const subscription = pubsub.subscription(this.subscriptionName);
