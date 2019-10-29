@@ -31,10 +31,20 @@ class HangoutsChatBot extends Adapter {
     this.isPubSub = options.isPubSub;
     this.port = options.port;
 
+    let google_auth_params = {}
+
+    if(process.env.GOOGLE_APPLICATION_CREDENTIALS_DATA) {
+       // Handle json file as a environement variable for Heroku like systems
+       google_auth_params = {
+           credentials: JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_DATA)
+       }
+     }
+
     // Establish OAuth with Hangouts Chat. This is required for PubSub bots and
     // HTTP bots which want to create async messages.
     const authClientPromise = auth.getClient({
-      scopes: ['https://www.googleapis.com/auth/chat.bot']
+      scopes: ['https://www.googleapis.com/auth/chat.bot'],
+      ...google_auth_params
     });
     this.chatPromise = authClientPromise.then((credentials) =>
       google.chat({
@@ -255,7 +265,7 @@ class HangoutsChatBot extends Adapter {
 
   /**
    * Sets up adapter for communicating with Hangouts Chat. Hubot invokes this
-   * message during initialization. Need to always respond otherwise you'll see the 
+   * message during initialization. Need to always respond otherwise you'll see the
    * "hubot is not responding" message in chat.
    */
   run() {
