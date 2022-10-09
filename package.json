@@ -9,11 +9,11 @@
     "test:dev:verbose": "HUBOT_LOG_LEVEL=all mocha 'examples/**/*-spec.js' --watch"
   },
   "dependencies": {
-    "@google-cloud/pubsub": "^0.29.1",
+    "@google-cloud/pubsub": "^2.0.0",
     "body-parser": "^1.18.2",
     "express": "^4.16.2",
-    "google-auth-library": "^1.6.1",
-    "googleapis": "^41.0.1",
+    "google-auth-library": "^6.0.0",
+    "googleapis": "^49.0.0",
     "request": "^2.87.0"
   },
   "devDependencies": {
