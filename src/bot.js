@@ -19,7 +19,6 @@
 const {Adapter, User, TextMessage} = require.main.require('hubot/es2015');
 const {PubSub} = require(`@google-cloud/pubsub`);
 const {google} = require('googleapis');
-const {auth} = require('google-auth-library');
 const {HangoutsChatTextMessage, AddedToSpaceTextMessage, AddedToSpaceMessage, RemovedFromSpaceMessage, CardClickedMessage} = require('./message')
 
 class HangoutsChatBot extends Adapter {
@@ -33,9 +32,12 @@ class HangoutsChatBot extends Adapter {
 
     // Establish OAuth with Hangouts Chat. This is required for PubSub bots and
     // HTTP bots which want to create async messages.
-    const authClientPromise = auth.getClient({
+    const googleauth = new google.auth.GoogleAuth({
       scopes: ['https://www.googleapis.com/auth/chat.bot']
     });
+
+    const authClientPromise = Promise.resolve(googleauth);
+
     this.chatPromise = authClientPromise.then((credentials) =>
       google.chat({
         version: 'v1',
@@ -255,7 +257,7 @@ class HangoutsChatBot extends Adapter {
 
   /**
    * Sets up adapter for communicating with Hangouts Chat. Hubot invokes this
-   * message during initialization. Need to always respond otherwise you'll see the 
+   * message during initialization. Need to always respond otherwise you'll see the
    * "hubot is not responding" message in chat.
    */
   run() {
